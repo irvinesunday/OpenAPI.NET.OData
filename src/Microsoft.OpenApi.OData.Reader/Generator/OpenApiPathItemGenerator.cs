@@ -3,7 +3,9 @@
 //  Licensed under the MIT License (MIT). See LICENSE in the repo root for license information.
 // ------------------------------------------------------------
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.OData.Edm;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.OData.Common;
@@ -22,7 +24,7 @@ namespace Microsoft.OpenApi.OData.Generator
         /// </summary>
         /// <param name="context">The OData context.</param>
         /// <returns>The created map of <see cref="OpenApiPathItem"/>.</returns>
-        public static IDictionary<string, OpenApiPathItem> CreatePathItems(this ODataContext context)
+        public static async Task<IDictionary<string, OpenApiPathItem>> CreatePathItems(this ODataContext context)
         {
             Utils.CheckArgumentNull(context, nameof(context));
 
@@ -34,6 +36,44 @@ namespace Microsoft.OpenApi.OData.Generator
 
             OpenApiConvertSettings settings = context.Settings.Clone();
             settings.EnableKeyAsSegment = context.KeyAsSegment;
+
+            //ConcurrentBag<Dictionary<string, OpenApiPathItem>> pathItemsBag = new();
+
+            //try
+            //{
+            //    await Task.Run(() =>
+            //    {
+            //        Parallel.ForEach(context.AllPaths, (path, state) =>
+            //        {
+            //            IPathItemHandler handler = context.PathItemHanderProvider.GetHandler(path.Kind);
+            //            if (handler == null)
+            //            {
+            //                return;
+            //            }
+
+            //            if (path.PathTemplate != null)
+            //            {
+            //                pathItemsBag.Add(new Dictionary<string, OpenApiPathItem>
+            //                {
+            //                    { path.PathTemplate, handler.CreatePathItem(context, path)}
+            //                });
+            //            }
+            //            else
+            //            {
+            //                pathItemsBag.Add(new Dictionary<string, OpenApiPathItem>
+            //                {
+            //                    { path.GetPathItemName(settings), handler.CreatePathItem(context, path)}
+            //                });
+            //            }
+            //        });
+            //    });
+            //}
+            //catch (System.Exception ex)
+            //{
+            //    throw;
+            //}
+
+
             foreach (ODataPath path in context.AllPaths)
             {
                 IPathItemHandler handler = context.PathItemHanderProvider.GetHandler(path.Kind);
@@ -51,6 +91,7 @@ namespace Microsoft.OpenApi.OData.Generator
                     pathItems.Add(path.GetPathItemName(settings), handler.CreatePathItem(context, path));
                 }
             }
+
 
             if (settings.ShowRootPath)
             {
